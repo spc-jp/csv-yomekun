@@ -70,6 +70,66 @@ main { max-width: 920px; margin: 0 auto; padding: 28px 20px 80px; }
   border: 1.5px solid transparent; transition: border-color 0.25s, box-shadow 0.25s;
 }
 .card:hover { border-color: var(--gold-light); box-shadow: 0 6px 32px rgba(201,168,76,0.12), var(--shadow); }
+
+/* HEADER BUTTONS */
+.header-btns { position: absolute; top: 16px; right: 20px; display: flex; gap: 8px; z-index: 10; }
+.hdr-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  background: rgba(255,255,255,0.75); backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(26,127,168,0.15); transition: all 0.2s;
+}
+.hdr-btn:hover { background: #fff; transform: scale(1.08); box-shadow: 0 4px 14px rgba(26,127,168,0.22); }
+
+/* MODAL */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(13,61,82,0.45); backdrop-filter: blur(3px);
+  z-index: 100; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: #fff; border-radius: 20px; padding: 32px 28px;
+  max-width: 480px; width: 90%; box-shadow: 0 16px 48px rgba(13,61,82,0.22);
+  position: relative; max-height: 85vh; overflow-y: auto;
+}
+.modal h2 { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.modal-close {
+  position: absolute; top: 14px; right: 16px;
+  width: 30px; height: 30px; border-radius: 50%; border: none;
+  background: #f0f0f0; cursor: pointer; font-size: 14px; color: var(--sub);
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: #e0e0e0; }
+.modal-section { margin-bottom: 20px; }
+.modal-section h3 { font-size: 13px; font-weight: 700; color: var(--main); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid var(--bg); }
+.modal-section p { font-size: 13px; color: var(--text); line-height: 1.8; }
+.modal-section ol, .modal-section ul { padding-left: 18px; font-size: 13px; color: var(--text); line-height: 2; }
+.modal-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.modal-btn {
+  flex: 1; min-width: 120px; padding: 12px 16px; border-radius: 10px; border: none;
+  font-size: 13px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.modal-btn.primary { background: linear-gradient(135deg, var(--main), var(--accent)); color: #fff; box-shadow: 0 3px 12px rgba(26,127,168,0.25); }
+.modal-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(14,157,197,0.35); }
+.modal-btn.danger { background: #fff; color: #e05050; border: 1.5px solid #f0c0c0; }
+.modal-btn.danger:hover { background: #fff0f0; }
+
+/* TRIAL BAR 改善 */
+.trial-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #fff8d6, #fff3b0);
+  border: 1.5px solid var(--yellow); border-radius: 12px;
+  padding: 14px 20px; margin-bottom: 20px;
+}
+.trial-inner { display: flex; align-items: center; gap: 16px; width: 100%; }
+.trial-text-block { flex: 1; }
+.trial-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.trial-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.trial-count-block { display: flex; align-items: baseline; gap: 4px; background: #fff; border-radius: 10px; padding: 8px 16px; border: 1.5px solid #f0d050; box-shadow: 0 2px 8px rgba(201,168,76,0.15); }
+.trial-num { font-size: 32px; font-weight: 900; color: var(--main); font-family: 'Inter', sans-serif; line-height: 1; }
+.trial-unit { font-size: 13px; font-weight: 700; color: var(--sub); }
 .card-title { font-size: 15px; font-weight: 700; color: var(--main); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
 .card-title .icon { width: 30px; height: 30px; background: var(--bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 
@@ -218,22 +278,80 @@ footer .logo { font-size: 14px; font-weight: 700; color: var(--main); margin-bot
 <body>
 
 <header>
+  <div class="header-btns">
+    <button class="hdr-btn" onclick="openModal('howto-modal')" title="使い方">❓</button>
+    <button class="hdr-btn" onclick="openModal('settings-modal')" title="設定">⚙️</button>
+  </div>
   <div class="badge">✨ AI搭載データ分析ツール</div>
   <h1>CSV<span>よめ</span>くん</h1>
   <p>CSVを読み込んで、言葉で指示するだけ。<br>集計・グラフ・インサイトを自動生成します。</p>
 </header>
 
+<!-- 使い方モーダル -->
+<div class="modal-overlay" id="howto-modal" onclick="closeModalOutside(event,'howto-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('howto-modal')">✕</button>
+    <h2>❓ 使い方ガイド</h2>
+    <div class="modal-section">
+      <h3>📌 このアプリの目的</h3>
+      <p>ExcelやCSVのデータを読み込んで、言葉で指示するだけでAIが集計・グラフ化・分析コメントを自動生成します。専門知識不要・Excelスキル不要で、誰でもすぐにデータ分析ができます。</p>
+    </div>
+    <div class="modal-section">
+      <h3>🚀 基本的な使い方</h3>
+      <ol>
+        <li>ExcelまたはCSVファイルをドラッグ＆ドロップ（またはボタンで選択）</li>
+        <li>データの先頭5行がプレビュー表示されます</li>
+        <li>クイックボタンを選ぶか、分析したい内容を自由に入力</li>
+        <li>「分析する」ボタンを押すとAIが自動で集計・グラフ化</li>
+        <li>結果はCSVでダウンロードも可能です</li>
+      </ol>
+    </div>
+    <div class="modal-section">
+      <h3>💬 指示の例</h3>
+      <ul>
+        <li>月別の売上を棒グラフにして</li>
+        <li>得意先ごとの合計金額を多い順に表にして</li>
+        <li>粗利率が低い商品を教えて</li>
+        <li>全体の傾向とポイントをまとめて</li>
+        <li>構成比を円グラフにして</li>
+      </ul>
+    </div>
+    <div class="modal-section">
+      <h3>🔒 プライバシーについて</h3>
+      <p>アップロードしたデータはブラウザ内で処理されます。分析の指示とデータの一部のみAIに送信され、外部に保存されることはありません。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 設定モーダル -->
+<div class="modal-overlay" id="settings-modal" onclick="closeModalOutside(event,'settings-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('settings-modal')">✕</button>
+    <h2>⚙️ 設定</h2>
+    <div class="modal-section">
+      <h3>📊 デモデータ</h3>
+      <p style="margin-bottom:12px;">サンプルの売上データを読み込んで、アプリの使い方をお試しいただけます。</p>
+      <div class="modal-btn-row">
+        <button class="modal-btn primary" onclick="loadDemoData()">📥 デモデータを読み込む</button>
+        <button class="modal-btn danger" onclick="clearDemoData()">🗑 デモデータをクリア</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <main>
 
   <!-- 無料トライアルバー -->
   <div class="trial-bar" id="trial-bar">
-    <div>
-      <div class="trial-left">無料お試し残り</div>
-      <div class="trial-label">登録不要・今すぐ使える</div>
-    </div>
-    <div style="text-align:right;">
-      <div class="trial-count" id="trial-count">3</div>
-      <div class="trial-label">回</div>
+    <div class="trial-inner">
+      <div class="trial-text-block">
+        <div class="trial-title">🎁 無料お試し</div>
+        <div class="trial-sub">登録不要・今すぐ使える</div>
+      </div>
+      <div class="trial-count-block">
+        <div class="trial-num" id="trial-count">3</div>
+        <div class="trial-unit">回残り</div>
+      </div>
     </div>
   </div>
 
@@ -646,6 +764,59 @@ function esc(s) {
 
 // 初期化
 updateTrialBar();
+
+// ============================================
+// モーダル制御
+// ============================================
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  document.body.style.overflow = '';
+}
+function closeModalOutside(e, id) {
+  if (e.target.id === id) closeModal(id);
+}
+
+// ============================================
+// デモデータ
+// ============================================
+function loadDemoData() {
+  const demoHeaders = ['月', '得意先名', '商品名', 'カテゴリ', '数量', '単価', '売上金額', '原価', '粗利'];
+  const demoRows = [
+    ['2024/01', '株式会社山田商事', '製品A', '機械部品', '120', '15000', '1800000', '1080000', '720000'],
+    ['2024/01', '有限会社田中工業', '製品B', '電子部品', '85', '28000', '2380000', '1428000', '952000'],
+    ['2024/01', '佐藤製造株式会社', '製品C', '機械部品', '200', '8500', '1700000', '1020000', '680000'],
+    ['2024/02', '株式会社山田商事', '製品A', '機械部品', '145', '15000', '2175000', '1305000', '870000'],
+    ['2024/02', '有限会社田中工業', '製品D', '消耗品', '300', '3200', '960000', '576000', '384000'],
+    ['2024/02', '鈴木物産株式会社', '製品B', '電子部品', '60', '28000', '1680000', '1008000', '672000'],
+    ['2024/03', '株式会社山田商事', '製品C', '機械部品', '180', '8500', '1530000', '918000', '612000'],
+    ['2024/03', '佐藤製造株式会社', '製品A', '機械部品', '95', '15000', '1425000', '855000', '570000'],
+    ['2024/03', '有限会社田中工業', '製品B', '電子部品', '110', '28000', '3080000', '1848000', '1232000'],
+    ['2024/04', '株式会社山田商事', '製品D', '消耗品', '450', '3200', '1440000', '864000', '576000'],
+    ['2024/04', '鈴木物産株式会社', '製品A', '機械部品', '130', '15000', '1950000', '1170000', '780000'],
+    ['2024/04', '佐藤製造株式会社', '製品C', '機械部品', '220', '8500', '1870000', '1122000', '748000'],
+    ['2024/05', '有限会社田中工業', '製品A', '機械部品', '160', '15000', '2400000', '1440000', '960000'],
+    ['2024/05', '株式会社山田商事', '製品B', '電子部品', '75', '28000', '2100000', '1260000', '840000'],
+    ['2024/05', '鈴木物産株式会社', '製品D', '消耗品', '380', '3200', '1216000', '729600', '486400'],
+    ['2024/06', '佐藤製造株式会社', '製品B', '電子部品', '90', '28000', '2520000', '1512000', '1008000'],
+    ['2024/06', '株式会社山田商事', '製品C', '機械部品', '240', '8500', '2040000', '1224000', '816000'],
+    ['2024/06', '有限会社田中工業', '製品D', '消耗品', '520', '3200', '1664000', '998400', '665600'],
+  ];
+
+  csvHeaders = demoHeaders;
+  csvData = demoRows;
+  fileName = 'デモ売上データ';
+  showAnalyzeCard(0);
+  closeModal('settings-modal');
+}
+
+function clearDemoData() {
+  resetFile();
+  closeModal('settings-modal');
+}
 </script>
 </body>
 </html>
