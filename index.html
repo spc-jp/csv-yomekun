@@ -461,11 +461,36 @@ footer .logo{font-size:14px;font-weight:700;color:var(--main);margin-bottom:4px;
     <div class="history-list" id="history-list"></div>
   </div>
 
+  <!-- パスワード解除モーダル -->
+  <div class="modal-overlay" id="pw-modal" onclick="closeModalOutside(event,'pw-modal')">
+    <div class="modal" style="max-width:400px;">
+      <button class="modal-close" onclick="closeModal('pw-modal')">✕</button>
+      <h2>🔓 Pro版を解除する</h2>
+      <div class="modal-section">
+        <p style="margin-bottom:16px;">無料お試し（3回）を使い切りました。<br>Pro版（¥3,980）をご購入後、パスワードを入力してください。</p>
+        <input type="password" id="pw-input" placeholder="パスワードを入力"
+          onkeydown="if(event.key==='Enter')checkPassword()"
+          style="width:100%;padding:12px 14px;border:2px solid #b8dcea;border-radius:10px;font-size:14px;font-family:'Noto Sans JP',sans-serif;margin-bottom:12px;">
+        <div id="pw-error" style="color:#e05050;font-size:12px;margin-bottom:12px;display:none;">パスワードが違います。もう一度お試しください。</div>
+        <div class="modal-btn-row">
+          <button class="modal-btn primary" onclick="checkPassword()">解除する</button>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1.5px solid #e0f0f7;text-align:center;">
+          <p style="font-size:12px;color:var(--sub);margin-bottom:10px;">まだご購入されていない方はこちら</p>
+          <a href="https://buy.stripe.com/5kQeVc9uOerzdhdg7qcV210" id="stripe-link" target="_blank"
+            style="display:inline-block;background:linear-gradient(135deg,var(--main),var(--accent));color:#fff;font-size:13px;font-weight:700;padding:10px 28px;border-radius:99px;text-decoration:none;">
+            💳 Pro版を購入する（¥3,980）
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Proバナー -->
   <div class="pro-banner" id="pro-banner" style="display:none;">
     <h3>🚀 Pro版でさらに便利に</h3>
     <p>無制限分析・複数CSV結合・PDFレポート出力・専門家レビューなど<br>業務をもっとスマートに。</p>
-    <div class="pro-btn">Pro版の詳細を見る →</div>
+    <div class="pro-btn" onclick="openModal('pw-modal')" style="cursor:pointer;">💳 Pro版を購入・解除する →</div>
   </div>
 
 </main>
@@ -479,6 +504,8 @@ footer .logo{font-size:14px;font-weight:700;color:var(--main);margin-bottom:4px;
 const WORKER_URL = 'https://csv-yomekun.yymmatsu.workers.dev';
 const FREE_LIMIT = 3;
 const STORAGE_KEY = 'csv_yomekun_count';
+const PRO_KEY = 'csv_yomekun_pro';
+const PASSWORD = 'yomekun2025';
 
 let csvHeaders = [];
 let csvData = [];
@@ -490,10 +517,27 @@ let historyList = [];
 let selectedIndustry = 'general';
 let currentReportText = '';
 
-// ============ 無料カウント ============
+// ============ 無料カウント・Pro判定 ============
+function isPro(){ return localStorage.getItem(PRO_KEY)==='1'; }
 function getCount(){ return parseInt(localStorage.getItem(STORAGE_KEY)||'0'); }
-function addCount(){ localStorage.setItem(STORAGE_KEY, getCount()+1); }
+function addCount(){ if(!isPro()) localStorage.setItem(STORAGE_KEY, getCount()+1); }
 function updateTrialBar(){
+  if(isPro()){
+    const bar = document.getElementById('trial-bar');
+    bar.style.background='linear-gradient(135deg,#e3f5fa,#f0fafd)';
+    bar.style.borderColor='var(--accent)';
+    bar.innerHTML=`<div class="trial-inner">
+      <div class="trial-text-block">
+        <div class="trial-title">✅ Pro版 利用中</div>
+        <div class="trial-sub">無制限でご利用いただけます</div>
+      </div>
+      <div class="trial-count-block" style="border-color:var(--accent);">
+        <div class="trial-num" style="font-size:20px;">∞</div>
+        <div class="trial-unit">回</div>
+      </div>
+    </div>`;
+    return;
+  }
   const remain = Math.max(0, FREE_LIMIT - getCount());
   document.getElementById('trial-count').textContent = remain;
   if(remain===0){
@@ -579,9 +623,9 @@ async function analyze(){
   const instruction = document.getElementById('instruction').value.trim();
   if(!instruction){alert('分析したい内容を入力してください');return;}
   if(csvHeaders.length===0){alert('ファイルを先に読み込んでください');return;}
-  if(getCount()>=FREE_LIMIT){
+  if(!isPro() && getCount()>=FREE_LIMIT){
     document.getElementById('pro-banner').style.display='block';
-    alert('無料お試し回数（3回）を使い切りました。Pro版をご検討ください。');
+    openModal('pw-modal');
     return;
   }
 
@@ -765,6 +809,28 @@ function confirmLoadDemo(){
 function confirmClearDemo(){
   closeModal('settings-modal');
   openModal('confirm-clear-modal');
+}
+
+// ============ パスワード解除 ============
+function checkPassword(){
+  const input = document.getElementById('pw-input').value.trim();
+  const errEl = document.getElementById('pw-error');
+  if(input === PASSWORD){
+    localStorage.setItem(PRO_KEY,'1');
+    closeModal('pw-modal');
+    document.getElementById('pw-input').value='';
+    errEl.style.display='none';
+    document.getElementById('pro-banner').style.display='none';
+    updateTrialBar();
+    // 解除成功アニメ
+    showConfetti();
+    setTimeout(()=>alert('🎉 Pro版が有効になりました！
+無制限でご利用いただけます。'),300);
+  } else {
+    errEl.style.display='block';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
 }
 
 // ============ モーダル ============
