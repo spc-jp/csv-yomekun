@@ -34,6 +34,8 @@ header::after{content:'';position:absolute;bottom:-40px;left:-40px;width:160px;h
 .header-btns{position:absolute;top:16px;right:20px;display:flex;gap:8px;z-index:10;}
 .hdr-btn{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.75);backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(26,127,168,0.15);transition:all 0.2s;}
 .hdr-btn:hover{background:#fff;transform:scale(1.08);}
+.pro-badge{display:none;position:absolute;top:14px;left:20px;background:linear-gradient(135deg,#C9A84C,#F0D07A);color:#0D3D52;font-size:11px;font-weight:700;padding:5px 14px;border-radius:99px;letter-spacing:0.05em;box-shadow:0 2px 8px rgba(201,168,76,0.35);animation:badge-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes badge-pop{from{opacity:0;transform:scale(0.7);}to{opacity:1;transform:scale(1);}}
 .badge{display:inline-block;background:var(--yellow);color:var(--text);font-size:11px;font-weight:700;letter-spacing:0.12em;padding:4px 14px;border-radius:99px;margin-bottom:14px;}
 header h1{font-size:clamp(26px,6vw,46px);font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
 header h1 span{color:var(--main);}
@@ -226,6 +228,7 @@ footer .logo{font-size:14px;font-weight:700;color:var(--main);margin-bottom:4px;
 <body>
 
 <header>
+  <div class="pro-badge" id="pro-badge">✨ Pro版 利用中</div>
   <div class="header-btns">
     <button class="hdr-btn" onclick="openModal('howto-modal')" title="使い方">❓</button>
     <button class="hdr-btn" onclick="openModal('settings-modal')" title="設定">⚙️</button>
@@ -523,10 +526,14 @@ function getCount(){ return parseInt(localStorage.getItem(STORAGE_KEY)||'0'); }
 function addCount(){ if(!isPro()) localStorage.setItem(STORAGE_KEY, getCount()+1); }
 function updateTrialBar(){
   if(isPro()){
+    // ヘッダーにPro版バッジを表示
+    const badge = document.getElementById('pro-badge');
+    if(badge) badge.style.display='block';
+    // トライアルバーを非表示
     const bar = document.getElementById('trial-bar');
-    bar.style.background='linear-gradient(135deg,#e3f5fa,#f0fafd)';
-    bar.style.borderColor='var(--accent)';
-    bar.innerHTML='<div class="trial-inner"><div class="trial-text-block"><div class="trial-title">Pro版 利用中</div><div class="trial-sub">無制限でご利用いただけます</div></div><div class="trial-count-block" style="border-color:var(--accent);"><div class="trial-num" style="font-size:20px;">&infin;</div><div class="trial-unit">回</div></div></div>';
+    if(bar) bar.style.display='none';
+    // Proバナーを非表示
+    document.getElementById('pro-banner').style.display='none';
     return;
   }
   const remain = Math.max(0, FREE_LIMIT - getCount());
@@ -828,6 +835,8 @@ header::after{content:'';position:absolute;bottom:-40px;left:-40px;width:160px;h
 .header-btns{position:absolute;top:16px;right:20px;display:flex;gap:8px;z-index:10;}
 .hdr-btn{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(255,255,255,0.75);backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(26,127,168,0.15);transition:all 0.2s;}
 .hdr-btn:hover{background:#fff;transform:scale(1.08);}
+.pro-badge{display:none;position:absolute;top:14px;left:20px;background:linear-gradient(135deg,#C9A84C,#F0D07A);color:#0D3D52;font-size:11px;font-weight:700;padding:5px 14px;border-radius:99px;letter-spacing:0.05em;box-shadow:0 2px 8px rgba(201,168,76,0.35);animation:badge-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes badge-pop{from{opacity:0;transform:scale(0.7);}to{opacity:1;transform:scale(1);}}
 .badge{display:inline-block;background:var(--yellow);color:var(--text);font-size:11px;font-weight:700;letter-spacing:0.12em;padding:4px 14px;border-radius:99px;margin-bottom:14px;}
 header h1{font-size:clamp(26px,6vw,46px);font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
 header h1 span{color:var(--main);}
@@ -1020,6 +1029,7 @@ footer .logo{font-size:14px;font-weight:700;color:var(--main);margin-bottom:4px;
 <body>
 
 <header>
+  <div class="pro-badge" id="pro-badge">✨ Pro版 利用中</div>
   <div class="header-btns">
     <button class="hdr-btn" onclick="openModal('howto-modal')" title="使い方">❓</button>
     <button class="hdr-btn" onclick="openModal('settings-modal')" title="設定">⚙️</button>
@@ -1317,10 +1327,14 @@ function getCount(){ return parseInt(localStorage.getItem(STORAGE_KEY)||'0'); }
 function addCount(){ if(!isPro()) localStorage.setItem(STORAGE_KEY, getCount()+1); }
 function updateTrialBar(){
   if(isPro()){
+    // ヘッダーにPro版バッジを表示
+    const badge = document.getElementById('pro-badge');
+    if(badge) badge.style.display='block';
+    // トライアルバーを非表示
     const bar = document.getElementById('trial-bar');
-    bar.style.background='linear-gradient(135deg,#e3f5fa,#f0fafd)';
-    bar.style.borderColor='var(--accent)';
-    bar.innerHTML='<div class="trial-inner"><div class="trial-text-block"><div class="trial-title">Pro版 利用中</div><div class="trial-sub">無制限でご利用いただけます</div></div><div class="trial-count-block" style="border-color:var(--accent);"><div class="trial-num" style="font-size:20px;">&infin;</div><div class="trial-unit">回</div></div></div>';
+    if(bar) bar.style.display='none';
+    // Proバナーを非表示
+    document.getElementById('pro-banner').style.display='none';
     return;
   }
   const remain = Math.max(0, FREE_LIMIT - getCount());
