@@ -124,11 +124,45 @@ tbody td{padding:9px 13px;border-bottom:1px solid #e0f0f7;max-width:150px;overfl
 /* LOADING */
 .loading{display:none;text-align:center;padding:40px 20px;}
 .loading.show{display:block;}
-.spinner{width:48px;height:48px;border:4px solid #cde9f4;border-top-color:var(--main);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}
+
+/* AI分析アニメーション */
+.ai-animation{position:relative;width:120px;height:120px;margin:0 auto 24px;}
+.ai-circle{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;animation:spin 1.2s linear infinite;}
+.ai-circle:nth-child(1){border-top-color:var(--main);animation-duration:1.2s;}
+.ai-circle:nth-child(2){inset:10px;border-right-color:var(--accent);animation-duration:1.8s;animation-direction:reverse;}
+.ai-circle:nth-child(3){inset:22px;border-bottom-color:var(--yellow);animation-duration:2.4s;}
+.ai-core{position:absolute;inset:36px;background:linear-gradient(135deg,var(--main),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;animation:pulse-core 1.5s ease-in-out infinite;}
+@keyframes pulse-core{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(26,127,168,0.4);}50%{transform:scale(1.08);box-shadow:0 0 0 10px rgba(26,127,168,0);}}
 @keyframes spin{to{transform:rotate(360deg);}}
-.loading p{color:var(--sub);font-size:14px;}
+
+/* パーティクル */
+.particles{position:relative;height:32px;margin-bottom:16px;overflow:hidden;}
+.particle{position:absolute;bottom:0;width:6px;height:6px;border-radius:50%;animation:float-up 1.8s ease-in infinite;}
+.particle:nth-child(1){left:15%;background:var(--main);animation-delay:0s;}
+.particle:nth-child(2){left:30%;background:var(--accent);animation-delay:0.3s;}
+.particle:nth-child(3){left:50%;background:var(--yellow);animation-delay:0.6s;}
+.particle:nth-child(4){left:70%;background:var(--main);animation-delay:0.9s;}
+.particle:nth-child(5){left:85%;background:var(--accent);animation-delay:1.2s;}
+@keyframes float-up{0%{transform:translateY(0) scale(1);opacity:1;}100%{transform:translateY(-32px) scale(0.3);opacity:0;}}
+
+/* タイピングテキスト */
+.loading-msg{font-size:14px;color:var(--sub);font-weight:600;min-height:24px;}
+.loading-dots::after{content:'';animation:dots 1.2s steps(4,end) infinite;}
+@keyframes dots{0%{content:'';}25%{content:'.';}50%{content:'..';}75%{content:'...';}100%{content:'';}}
 
 /* RESULT */
+@keyframes result-pop{
+  0%{opacity:0;transform:translateY(20px) scale(0.97);}
+  60%{transform:translateY(-4px) scale(1.01);}
+  100%{opacity:1;transform:translateY(0) scale(1);}
+}
+@keyframes confetti-fall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
+  100%{transform:translateY(60px) rotate(360deg);opacity:0;}
+}
+.result-show{animation:result-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;}
+.confetti-wrap{position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:200;overflow:hidden;height:100px;}
+.confetti-piece{position:absolute;top:-20px;width:8px;height:8px;border-radius:2px;animation:confetti-fall 1.2s ease-in forwards;}
 #result-area{display:none;}
 #result-area.show{display:block;}
 .summary-box{background:linear-gradient(135deg,#e3f5fa,#f0fafd);border-left:4px solid var(--accent);border-radius:0 12px 12px 0;padding:16px 20px;margin-bottom:20px;font-size:14px;color:var(--text);line-height:1.8;}
@@ -363,8 +397,20 @@ footer .logo{font-size:14px;font-weight:700;color:var(--main);margin-bottom:4px;
 
     <!-- ローディング -->
     <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <p>AIが分析・診断中です…しばらくお待ちください</p>
+      <div class="ai-animation">
+        <div class="ai-circle"></div>
+        <div class="ai-circle"></div>
+        <div class="ai-circle"></div>
+        <div class="ai-core">🤖</div>
+      </div>
+      <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+      </div>
+      <div class="loading-msg loading-dots" id="loading-msg">AIが分析中です</div>
     </div>
 
     <!-- 結果エリア -->
@@ -402,7 +448,8 @@ footer .logo{font-size:14px;font-weight:700;color:var(--main);margin-bottom:4px;
 
       <!-- ダウンロードボタン -->
       <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
-        <button onclick="downloadResultCSV()" style="padding:10px 20px;background:var(--main);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">📥 結果をCSVで保存</button>
+        <button onclick="downloadResultCSV()" style="padding:10px 20px;background:var(--main);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">📥 CSVで保存</button>
+        <button onclick="copyTableAsTab()" id="copy-tab-btn" style="padding:10px 20px;background:linear-gradient(135deg,#1a9a6a,#22b87a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">📋 Excelにコピー</button>
         <button onclick="clearResult()" style="padding:10px 20px;border:1.5px solid #b8dcea;background:#fff;border-radius:8px;font-size:13px;color:var(--sub);cursor:pointer;font-family:inherit;">別の指示を試す</button>
       </div>
     </div>
@@ -543,6 +590,7 @@ async function analyze(){
   document.getElementById('analyze-btn').disabled=true;
   document.getElementById('instruction').disabled=true;
   clearResult(false);
+  startLoadingMessages();
 
   try{
     const res = await fetch(WORKER_URL,{
@@ -565,6 +613,7 @@ async function analyze(){
   }catch(err){
     alert('エラー：'+err.message);
   }finally{
+    stopLoadingMessages();
     document.getElementById('loading').classList.remove('show');
     document.getElementById('analyze-btn').disabled=false;
     document.getElementById('instruction').disabled=false;
@@ -573,6 +622,8 @@ async function analyze(){
 
 // ============ 結果描画 ============
 function renderResult(result){
+  // コンフェッティ演出
+  showConfetti();
   // サマリー
   document.getElementById('summary-box').textContent=result.summary||'';
 
@@ -645,8 +696,31 @@ function renderResult(result){
     reportBox.style.display='none';
   }
 
-  document.getElementById('result-area').classList.add('show');
-  document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
+  const ra = document.getElementById('result-area');
+  ra.classList.add('show');
+  ra.classList.remove('result-show');
+  void ra.offsetWidth;
+  ra.classList.add('result-show');
+  ra.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ============ コンフェッティ ============
+function showConfetti(){
+  const colors=['#1A7FA8','#0E9DC5','#FFE066','#4DBCD4','#C9A84C','#B8E8F5'];
+  const wrap = document.createElement('div');
+  wrap.className='confetti-wrap';
+  for(let i=0;i<18;i++){
+    const c=document.createElement('div');
+    c.className='confetti-piece';
+    c.style.left=Math.random()*100+'%';
+    c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    c.style.animationDelay=(Math.random()*0.6)+'s';
+    c.style.animationDuration=(0.9+Math.random()*0.6)+'s';
+    c.style.transform=`rotate(${Math.random()*180}deg)`;
+    wrap.appendChild(c);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(()=>wrap.remove(),2000);
 }
 
 // ============ 報告文コピー ============
@@ -726,6 +800,30 @@ function loadDemoData(){
   closeModal('confirm-load-modal');
 }
 function clearDemoData(){resetFile();closeModal('confirm-clear-modal');}
+
+// ============ ローディングメッセージ ============
+let loadingTimer = null;
+function startLoadingMessages(){
+  const msgs = [
+    'データを読み込んでいます',
+    'AIが分析中です',
+    '集計ロジックを組み立てています',
+    'グラフデータを準備しています',
+    'アドバイスを生成しています',
+    '報告文を作成しています',
+    'もうすぐ完成します',
+  ];
+  let i = 0;
+  const el = document.getElementById('loading-msg');
+  if(el) el.textContent = msgs[0];
+  loadingTimer = setInterval(()=>{
+    i = (i+1) % msgs.length;
+    if(el) el.textContent = msgs[i];
+  }, 1800);
+}
+function stopLoadingMessages(){
+  if(loadingTimer){ clearInterval(loadingTimer); loadingTimer=null; }
+}
 
 // ============ ユーティリティ ============
 function clearResult(resetInput=true){
