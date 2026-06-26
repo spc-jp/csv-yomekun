@@ -197,8 +197,8 @@ footer .logo{font-size:14px;font-weight:700;color:var(--main);margin-bottom:4px;
     <button class="hdr-btn" onclick="openModal('settings-modal')" title="設定">⚙️</button>
   </div>
   <div class="badge">✨ AI搭載コンサル分析ツール</div>
-  <h1>CSV<span>よめ</span>くん</h1>
-  <p>データを読む。診断する。アドバイスする。<br>あなたの経営参謀AIです。</p>
+  <h1><a href="#" onclick="resetFile();return false;" style="text-decoration:none;color:inherit;">CSV<span>よめ</span>くん</a></h1>
+  <p>ExcelやCSVを読み込んで、言葉で指示するだけ。<br>集計・グラフ・AIアドバイスを自動生成します。</p>
 </header>
 
 <!-- 使い方モーダル -->
@@ -245,9 +245,39 @@ footer .logo{font-size:14px;font-weight:700;color:var(--main);margin-bottom:4px;
       <h3>📊 デモデータ</h3>
       <p style="margin-bottom:12px;">サンプルの売上データを読み込んで、アプリの使い方をお試しいただけます。</p>
       <div class="modal-btn-row">
-        <button class="modal-btn primary" onclick="loadDemoData()">📥 デモデータを読み込む</button>
-        <button class="modal-btn danger" onclick="clearDemoData()">🗑 デモデータをクリア</button>
+        <button class="modal-btn primary" onclick="confirmLoadDemo()">📥 デモデータを読み込む</button>
+        <button class="modal-btn danger" onclick="confirmClearDemo()">🗑 デモデータをクリア</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 確認モーダル（デモ読込） -->
+<div class="modal-overlay" id="confirm-load-modal" onclick="closeModalOutside(event,'confirm-load-modal')">
+  <div class="modal" style="max-width:360px;">
+    <button class="modal-close" onclick="closeModal('confirm-load-modal')">✕</button>
+    <h2>📥 デモデータを読み込む</h2>
+    <div class="modal-section">
+      <p>サンプルの売上データを読み込みます。<br>現在のデータはクリアされます。よろしいですか？</p>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-btn primary" onclick="loadDemoData()">はい、読み込む</button>
+      <button class="modal-btn danger" onclick="closeModal('confirm-load-modal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- 確認モーダル（デモクリア） -->
+<div class="modal-overlay" id="confirm-clear-modal" onclick="closeModalOutside(event,'confirm-clear-modal')">
+  <div class="modal" style="max-width:360px;">
+    <button class="modal-close" onclick="closeModal('confirm-clear-modal')">✕</button>
+    <h2>🗑 デモデータをクリア</h2>
+    <div class="modal-section">
+      <p>デモデータをクリアして、ファイル選択画面に戻ります。よろしいですか？</p>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-btn danger" onclick="clearDemoData()">はい、クリアする</button>
+      <button class="modal-btn primary" onclick="closeModal('confirm-clear-modal')">キャンセル</button>
     </div>
   </div>
 </div>
@@ -653,6 +683,16 @@ function renderHistory(){
   list.innerHTML=historyList.map(h=>`<div class="hist-item" onclick="setInstruction('${h.instruction.replace(/'/g,"\\'")}')">🔍 ${esc(h.instruction)}<span class="hist-time">${h.time}</span></div>`).join('');
 }
 
+// ============ デモ確認関数 ============
+function confirmLoadDemo(){
+  closeModal('settings-modal');
+  openModal('confirm-load-modal');
+}
+function confirmClearDemo(){
+  closeModal('settings-modal');
+  openModal('confirm-clear-modal');
+}
+
 // ============ モーダル ============
 function openModal(id){document.getElementById(id).classList.add('show');document.body.style.overflow='hidden';}
 function closeModal(id){document.getElementById(id).classList.remove('show');document.body.style.overflow='';}
@@ -683,9 +723,9 @@ function loadDemoData(){
   ];
   fileName='デモ売上データ';
   showAnalyzeCard(0);
-  closeModal('settings-modal');
+  closeModal('confirm-load-modal');
 }
-function clearDemoData(){resetFile();closeModal('settings-modal');}
+function clearDemoData(){resetFile();closeModal('confirm-clear-modal');}
 
 // ============ ユーティリティ ============
 function clearResult(resetInput=true){
