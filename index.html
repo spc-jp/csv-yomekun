@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSVよめくん｜言葉でCSVを分析・グラフ化</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@400;600;700&display=swap');
+
+:root {
+  --main: #1A7FA8;
+  --accent: #0E9DC5;
+  --yellow: #FFE066;
+  --bg: #EBF7FC;
+  --text: #0D3D52;
+  --sub: #2E7A96;
+  --gold: #C9A84C;
+  --gold-light: #F0D07A;
+  --white: #FFFFFF;
+  --radius: 16px;
+  --shadow: 0 4px 24px rgba(26,127,168,0.10);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* HEADER */
+header {
+  background: linear-gradient(160deg, #7DD4ED 0%, #B8E8F5 50%, #E8F7FC 100%);
+  padding: 44px 24px 52px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: ''; position: absolute; top: -50px; right: -50px;
+  width: 220px; height: 220px; background: rgba(255,224,102,0.18); border-radius: 50%;
+}
+header::after {
+  content: ''; position: absolute; bottom: -40px; left: -40px;
+  width: 160px; height: 160px; background: rgba(14,157,197,0.12); border-radius: 50%;
+}
+.badge { display: inline-block; background: var(--yellow); color: var(--text); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; padding: 4px 14px; border-radius: 99px; margin-bottom: 14px; }
+header h1 { font-size: clamp(26px,6vw,46px); font-weight: 900; color: var(--text); line-height: 1.2; margin-bottom: 10px; }
+header h1 span { color: var(--main); }
+header p { font-size: 14px; color: var(--sub); line-height: 1.8; }
+
+/* MAIN */
+main { max-width: 920px; margin: 0 auto; padding: 28px 20px 80px; }
+
+/* CARD */
+.card {
+  background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 28px 28px; margin-bottom: 20px;
+  border: 1.5px solid transparent; transition: border-color 0.25s, box-shadow 0.25s;
+}
+.card:hover { border-color: var(--gold-light); box-shadow: 0 6px 32px rgba(201,168,76,0.12), var(--shadow); }
+.card-title { font-size: 15px; font-weight: 700; color: var(--main); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.card-title .icon { width: 30px; height: 30px; background: var(--bg); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
+/* UPLOAD */
+.upload-zone {
+  border: 2.5px dashed #90cfe3; border-radius: 12px; padding: 44px 24px;
+  text-align: center; cursor: pointer; transition: all 0.25s; background: #f5fbfd;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: #e6f6fb; box-shadow: 0 0 0 4px rgba(14,157,197,0.08); }
+.upload-icon { font-size: 44px; margin-bottom: 10px; display: block; }
+.upload-zone p { color: var(--sub); font-size: 14px; line-height: 1.8; }
+.upload-btn { margin-top: 14px; display: inline-block; background: var(--main); color: #fff; font-size: 13px; font-weight: 700; padding: 10px 28px; border-radius: 99px; cursor: pointer; }
+.upload-btn:hover { background: var(--accent); }
+#file-input { display: none; }
+
+/* FILE INFO */
+.file-info {
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  background: #e3f5fa; border-radius: 10px; margin-bottom: 16px;
+}
+.file-info .fi-icon { font-size: 24px; }
+.file-info .fi-name { font-weight: 700; font-size: 14px; color: var(--text); }
+.file-info .fi-meta { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.file-info .fi-reset { margin-left: auto; padding: 6px 14px; border: 1.5px solid #b8dcea; background: #fff; border-radius: 6px; font-size: 12px; color: var(--sub); cursor: pointer; font-family: inherit; }
+
+/* PREVIEW TABLE */
+.table-wrap { overflow-x: auto; border-radius: 10px; border: 1.5px solid #cde9f4; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: linear-gradient(90deg, var(--main), var(--accent)); }
+thead th { color: #fff; padding: 11px 13px; text-align: left; font-weight: 600; white-space: nowrap; font-size: 12px; }
+tbody tr:nth-child(even) { background: #f0fafd; }
+tbody tr:hover { background: #ddf1f8; }
+tbody td { padding: 9px 13px; border-bottom: 1px solid #e0f0f7; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* QUICK BUTTONS */
+.quick-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.quick-btn {
+  padding: 7px 14px; border: 1.5px solid #b8dcea; background: #f0fafd;
+  border-radius: 99px; font-size: 12px; color: var(--sub); cursor: pointer;
+  font-family: inherit; transition: all 0.2s; white-space: nowrap;
+}
+.quick-btn:hover { background: var(--main); color: #fff; border-color: var(--main); }
+
+/* INSTRUCTION */
+.inst-wrap { display: flex; gap: 10px; align-items: flex-end; }
+.inst-input {
+  flex: 1; padding: 14px 16px; border: 2px solid #b8dcea; border-radius: 10px;
+  font-size: 14px; font-family: 'Noto Sans JP', sans-serif; color: var(--text);
+  resize: vertical; min-height: 56px; max-height: 120px; transition: border-color 0.2s;
+}
+.inst-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,157,197,0.10); }
+.analyze-btn {
+  padding: 14px 28px; background: linear-gradient(135deg, var(--main), var(--accent));
+  color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+  font-family: 'Noto Sans JP', sans-serif; cursor: pointer; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(26,127,168,0.28); transition: all 0.25s;
+}
+.analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(14,157,197,0.38); }
+.analyze-btn:disabled { background: #b8dcea; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* LOADING */
+.loading {
+  display: none; text-align: center; padding: 40px 20px;
+}
+.loading.show { display: block; }
+.spinner {
+  width: 48px; height: 48px; border: 4px solid #cde9f4;
+  border-top-color: var(--main); border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading p { color: var(--sub); font-size: 14px; }
+
+/* RESULT */
+#result-area { display: none; }
+#result-area.show { display: block; }
+
+/* SUMMARY BOX */
+.summary-box {
+  background: linear-gradient(135deg, #e3f5fa, #f0fafd);
+  border-left: 4px solid var(--accent); border-radius: 0 12px 12px 0;
+  padding: 16px 20px; margin-bottom: 20px; font-size: 14px; color: var(--text); line-height: 1.8;
+}
+
+/* INSIGHTS */
+.insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.insight-card {
+  background: var(--bg); border: 1.5px solid #cde9f4; border-radius: 10px;
+  padding: 14px 16px; font-size: 13px; color: var(--text); line-height: 1.7;
+  display: flex; gap: 8px;
+}
+.insight-card::before { content: '💡'; flex-shrink: 0; }
+
+/* CHART */
+.chart-wrap { background: var(--white); border-radius: 12px; border: 1.5px solid #cde9f4; padding: 24px; margin-bottom: 20px; }
+.chart-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.chart-container { position: relative; max-height: 360px; }
+
+/* HISTORY */
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.hist-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  background: var(--bg); border-radius: 8px; border: 1.5px solid #cde9f4;
+  cursor: pointer; transition: all 0.2s; font-size: 13px; color: var(--sub);
+}
+.hist-item:hover { background: #ddf1f8; border-color: var(--accent); color: var(--text); }
+.hist-item .hist-time { font-size: 11px; color: #90b8c8; margin-left: auto; white-space: nowrap; }
+
+/* FREE TRIAL */
+.trial-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #fff8d6, #fff3b0);
+  border: 1.5px solid var(--yellow); border-radius: 10px;
+  padding: 12px 18px; margin-bottom: 20px; font-size: 13px;
+}
+.trial-bar .trial-left { color: var(--text); font-weight: 600; }
+.trial-bar .trial-count { font-size: 22px; font-weight: 900; color: var(--main); font-family: 'Inter', sans-serif; }
+.trial-bar .trial-label { font-size: 11px; color: var(--sub); }
+
+/* PRO BANNER */
+.pro-banner {
+  background: linear-gradient(135deg, var(--main), var(--accent));
+  border-radius: 12px; padding: 20px 24px; color: #fff; text-align: center; margin-top: 24px;
+}
+.pro-banner h3 { font-size: 16px; margin-bottom: 6px; }
+.pro-banner p { font-size: 13px; opacity: 0.9; margin-bottom: 14px; line-height: 1.7; }
+.pro-btn { display: inline-block; background: var(--yellow); color: var(--text); font-weight: 700; font-size: 13px; padding: 10px 28px; border-radius: 99px; cursor: pointer; }
+
+/* STAT CHIPS */
+.stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.stat-chip { background: var(--bg); border: 1.5px solid #cde9f4; border-radius: 8px; padding: 7px 13px; font-size: 12px; color: var(--sub); }
+.stat-chip strong { color: var(--main); font-size: 17px; font-family: 'Inter', sans-serif; font-weight: 700; display: block; }
+
+/* FOOTER */
+footer { text-align: center; padding: 28px 24px; font-size: 12px; color: var(--sub); border-top: 1px solid #cde9f4; }
+footer .logo { font-size: 14px; font-weight: 700; color: var(--main); margin-bottom: 4px; }
+
+@media (max-width: 600px) {
+  .card { padding: 18px; }
+  .inst-wrap { flex-direction: column; }
+  .analyze-btn { width: 100%; }
+  header { padding: 32px 16px 40px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">✨ AI搭載データ分析ツール</div>
+  <h1>CSV<span>よめ</span>くん</h1>
+  <p>CSVを読み込んで、言葉で指示するだけ。<br>集計・グラフ・インサイトを自動生成します。</p>
+</header>
+
+<main>
+
+  <!-- 無料トライアルバー -->
+  <div class="trial-bar" id="trial-bar">
+    <div>
+      <div class="trial-left">無料お試し残り</div>
+      <div class="trial-label">登録不要・今すぐ使える</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="trial-count" id="trial-count">3</div>
+      <div class="trial-label">回</div>
+    </div>
+  </div>
+
+  <!-- STEP1: ファイル読込 -->
+  <div class="card" id="upload-card">
+    <div class="card-title"><span class="icon">📂</span>CSVファイルを読み込む</div>
+    <div class="upload-zone" id="drop-zone">
+      <span class="upload-icon">📊</span>
+      <p>ここにCSVファイルをドラッグ＆ドロップ<br>または</p>
+      <label for="file-input" class="upload-btn">ファイルを選ぶ</label>
+      <input type="file" id="file-input" accept=".csv,.tsv">
+      <p style="margin-top:12px;font-size:12px;color:#90b8c8;">対応形式：CSV / TSV　ブラウザ内で完結・データ送信なし</p>
+    </div>
+  </div>
+
+  <!-- STEP2: データ確認 + 分析指示 -->
+  <div class="card" id="analyze-card" style="display:none;">
+    <div class="card-title"><span class="icon">📋</span>データ確認</div>
+
+    <div class="file-info" id="file-info"></div>
+    <div class="stat-row" id="stat-row"></div>
+
+    <div class="table-wrap" style="margin-top:16px;">
+      <table id="preview-table"></table>
+    </div>
+
+    <div style="margin-top:24px;">
+      <div class="card-title" style="margin-bottom:10px;"><span class="icon">💬</span>どう分析しますか？</div>
+
+      <div class="quick-btns" id="quick-btns">
+        <button class="quick-btn" onclick="setInstruction('月別の合計金額を棒グラフにして')">📊 月別合計を棒グラフ</button>
+        <button class="quick-btn" onclick="setInstruction('得意先ごとの合計金額を多い順に表にして')">🏢 得意先別集計</button>
+        <button class="quick-btn" onclick="setInstruction('商品別の売上ランキングを表にして')">📦 商品別ランキング</button>
+        <button class="quick-btn" onclick="setInstruction('全体の傾向とポイントを教えて')">🔍 全体の傾向を分析</button>
+        <button class="quick-btn" onclick="setInstruction('売上の推移を折れ線グラフにして')">📈 売上推移グラフ</button>
+        <button class="quick-btn" onclick="setInstruction('構成比を円グラフにして')">🥧 構成比を円グラフ</button>
+      </div>
+
+      <div class="inst-wrap">
+        <textarea class="inst-input" id="instruction" placeholder="例）月別の売上を棒グラフにして　/　得意先ごとの合計を表にして　/　粗利率が低い商品を教えて"></textarea>
+        <button class="analyze-btn" id="analyze-btn" onclick="analyze()">分析する →</button>
+      </div>
+    </div>
+
+    <!-- ローディング -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>AIが分析中です…しばらくお待ちください</p>
+    </div>
+
+    <!-- 結果エリア -->
+    <div id="result-area">
+      <div style="margin:24px 0 14px;border-top:1.5px solid #e0f0f7;padding-top:24px;">
+        <div class="card-title"><span class="icon">✅</span>分析結果</div>
+      </div>
+
+      <div class="summary-box" id="summary-box"></div>
+
+      <div class="insights" id="insights-box"></div>
+
+      <div class="chart-wrap" id="chart-wrap" style="display:none;">
+        <div class="chart-title" id="chart-title"></div>
+        <div class="chart-container">
+          <canvas id="myChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-top:20px;margin-bottom:10px;"><span class="icon">📋</span>集計表</div>
+      <div class="table-wrap">
+        <table id="result-table"></table>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button onclick="downloadResultCSV()" style="padding:10px 20px;background:var(--main);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">📥 結果をCSVで保存</button>
+        <button onclick="clearResult()" style="padding:10px 20px;border:1.5px solid #b8dcea;background:#fff;border-radius:8px;font-size:13px;color:var(--sub);cursor:pointer;font-family:inherit;">別の指示を試す</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 履歴 -->
+  <div class="card" id="history-card" style="display:none;">
+    <div class="card-title"><span class="icon">🕐</span>分析履歴</div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+  <!-- Proバナー -->
+  <div class="pro-banner" id="pro-banner" style="display:none;">
+    <h3>🚀 Pro版でさらに便利に</h3>
+    <p>無制限分析・複数CSV結合・異常値検出・レポート出力など<br>業務をもっとスマートに。</p>
+    <div class="pro-btn">Pro版の詳細を見る →</div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="logo">CSVよめくん</div>
+  <p>Powered by Smile Plus Consulting × Claude AI<br>データはブラウザ内で安全に処理されます</p>
+</footer>
+
+<script>
+// ============================================
+// 設定
+// ============================================
+const WORKER_URL = 'https://csv-kireikun.yymmatsu.workers.dev';
+const FREE_LIMIT = 3;
+const STORAGE_KEY = 'csv_yomekun_count';
+
+// ============================================
+// 状態管理
+// ============================================
+let csvHeaders = [];
+let csvData = [];
+let fileName = '';
+let chartInstance = null;
+let resultHeaders = [];
+let resultRows = [];
+let history = [];
+
+// ============================================
+// 無料カウント
+// ============================================
+function getCount() { return parseInt(localStorage.getItem(STORAGE_KEY) || '0'); }
+function addCount() { localStorage.setItem(STORAGE_KEY, getCount() + 1); }
+function updateTrialBar() {
+  const used = getCount();
+  const remain = Math.max(0, FREE_LIMIT - used);
+  document.getElementById('trial-count').textContent = remain;
+  if (remain === 0) {
+    document.getElementById('trial-bar').style.background = 'linear-gradient(135deg, #ffe0e0, #ffd0d0)';
+    document.getElementById('trial-bar').style.borderColor = '#ffaaaa';
+    document.getElementById('pro-banner').style.display = 'block';
+  }
+}
+
+// ============================================
+// ドラッグ＆ドロップ
+// ============================================
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+document.getElementById('file-input').addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+
+// ============================================
+// ファイル処理
+// ============================================
+function processFile(file) {
+  fileName = file.name.replace(/\.[^.]+$/, '');
+  Papa.parse(file, {
+    header: false,
+    skipEmptyLines: true,
+    complete: result => {
+      if (result.data.length < 2) { alert('2行以上のCSVをご利用ください'); return; }
+      csvHeaders = result.data[0].map(h => String(h).trim());
+      csvData = result.data.slice(1).map(row => row.map(c => String(c).trim()));
+      showAnalyzeCard(file.size);
+    }
+  });
+}
+
+function showAnalyzeCard(fileSize) {
+  document.getElementById('upload-card').style.display = 'none';
+  document.getElementById('analyze-card').style.display = 'block';
+
+  // ファイル情報
+  const kb = (fileSize / 1024).toFixed(1);
+  document.getElementById('file-info').innerHTML = `
+    <span class="fi-icon">📄</span>
+    <div>
+      <div class="fi-name">${esc(fileName)}.csv</div>
+      <div class="fi-meta">${kb} KB</div>
+    </div>
+    <button class="fi-reset" onclick="resetFile()">× 別ファイルを使う</button>
+  `;
+
+  // 統計チップ
+  document.getElementById('stat-row').innerHTML = `
+    <div class="stat-chip"><strong>${csvHeaders.length}</strong>列</div>
+    <div class="stat-chip"><strong>${csvData.length}</strong>行</div>
+    <div class="stat-chip"><strong>${csvHeaders.slice(0,3).join('・')}</strong>など</div>
+  `;
+
+  // プレビューテーブル（先頭5行）
+  const preview = csvData.slice(0, 5);
+  let html = '<thead><tr>' + csvHeaders.map(h => `<th>${esc(h)}</th>`).join('') + '</tr></thead>';
+  html += '<tbody>' + preview.map(row => '<tr>' + csvHeaders.map((_, i) => `<td>${esc(row[i] || '')}</td>`).join('') + '</tr>').join('') + '</tbody>';
+  document.getElementById('preview-table').innerHTML = html;
+
+  updateTrialBar();
+  clearResult();
+}
+
+// ============================================
+// クイックボタン
+// ============================================
+function setInstruction(text) {
+  document.getElementById('instruction').value = text;
+  document.getElementById('instruction').focus();
+}
+
+// ============================================
+// 分析実行
+// ============================================
+async function analyze() {
+  const instruction = document.getElementById('instruction').value.trim();
+  if (!instruction) { alert('分析したい内容を入力してください'); return; }
+  if (csvHeaders.length === 0) { alert('CSVを先に読み込んでください'); return; }
+
+  if (getCount() >= FREE_LIMIT) {
+    document.getElementById('pro-banner').style.display = 'block';
+    alert('無料お試し回数（3回）を使い切りました。Pro版をご検討ください。');
+    return;
+  }
+
+  // UI
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('result-area').classList.remove('show');
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('instruction').disabled = true;
+  clearResult(false);
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instruction,
+        csvData: csvData.slice(0, 300),
+        headers: csvHeaders,
+        rowCount: csvData.length,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'エラーが発生しました');
+
+    addCount();
+    updateTrialBar();
+    renderResult(data.result, instruction);
+    addHistory(instruction);
+
+  } catch (err) {
+    alert('エラー：' + err.message);
+  } finally {
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('analyze-btn').disabled = false;
+    document.getElementById('instruction').disabled = false;
+  }
+}
+
+// ============================================
+// 結果描画
+// ============================================
+function renderResult(result, instruction) {
+  // サマリー
+  document.getElementById('summary-box').textContent = result.summary || '';
+
+  // インサイト
+  const insBox = document.getElementById('insights-box');
+  insBox.innerHTML = '';
+  if (result.insights && result.insights.length) {
+    result.insights.forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'insight-card';
+      d.textContent = t;
+      insBox.appendChild(d);
+    });
+  }
+
+  // グラフ
+  const chartWrap = document.getElementById('chart-wrap');
+  if (!result.noChart && result.chartData && result.chartData.labels && result.chartData.datasets) {
+    chartWrap.style.display = 'block';
+    document.getElementById('chart-title').textContent = result.chartData.title || '';
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const colors = [
+      '#1A7FA8','#0E9DC5','#FFE066','#4DBCD4','#2E7A96',
+      '#7DD4ED','#C9A84C','#B8E8F5','#F0D07A','#0D3D52'
+    ];
+    const ds = result.chartData.datasets.map((d, i) => ({
+      label: d.label,
+      data: d.data,
+      backgroundColor: result.chartData.type === 'line'
+        ? colors[i % colors.length] + '22'
+        : result.chartData.type === 'pie' || result.chartData.type === 'doughnut'
+          ? colors
+          : colors[i % colors.length],
+      borderColor: result.chartData.type === 'pie' || result.chartData.type === 'doughnut'
+        ? '#fff'
+        : colors[i % colors.length],
+      borderWidth: result.chartData.type === 'line' ? 2.5 : 1,
+      fill: result.chartData.type === 'line',
+      tension: 0.35,
+      borderRadius: result.chartData.type === 'bar' ? 6 : 0,
+    }));
+    chartInstance = new Chart(ctx, {
+      type: result.chartData.type || 'bar',
+      data: { labels: result.chartData.labels, datasets: ds },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { labels: { font: { family: 'Noto Sans JP', size: 12 }, color: '#0D3D52' } },
+        },
+        scales: result.chartData.type === 'pie' || result.chartData.type === 'doughnut' ? {} : {
+          y: { ticks: { font: { family: 'Inter' }, color: '#2E7A96' }, grid: { color: '#e0f0f7' } },
+          x: { ticks: { font: { family: 'Noto Sans JP', size: 11 }, color: '#2E7A96' }, grid: { color: '#e0f0f7' } },
+        },
+      }
+    });
+  } else {
+    chartWrap.style.display = 'none';
+  }
+
+  // テーブル
+  if (result.tableData && result.tableData.headers && result.tableData.rows) {
+    resultHeaders = result.tableData.headers;
+    resultRows = result.tableData.rows;
+    let html = '<thead><tr>' + resultHeaders.map(h => `<th>${esc(h)}</th>`).join('') + '</tr></thead>';
+    html += '<tbody>' + resultRows.map(row => '<tr>' + row.map(c => `<td>${esc(String(c))}</td>`).join('') + '</tr>').join('') + '</tbody>';
+    document.getElementById('result-table').innerHTML = html;
+  }
+
+  document.getElementById('result-area').classList.add('show');
+  document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ============================================
+// CSV ダウンロード
+// ============================================
+function downloadResultCSV() {
+  if (!resultHeaders.length) return;
+  const lines = [resultHeaders.join(','), ...resultRows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(','))];
+  const csv = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = fileName + '_分析結果.csv'; a.click();
+}
+
+// ============================================
+// 履歴
+// ============================================
+function addHistory(instruction) {
+  const now = new Date();
+  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  history.unshift({ instruction, time });
+  if (history.length > 5) history.pop();
+  renderHistory();
+}
+function renderHistory() {
+  const card = document.getElementById('history-card');
+  const list = document.getElementById('history-list');
+  if (!history.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  list.innerHTML = history.map((h, i) =>
+    `<div class="hist-item" onclick="setInstruction('${h.instruction.replace(/'/g,"\\'")}')">
+      🔍 ${esc(h.instruction)}
+      <span class="hist-time">${h.time}</span>
+    </div>`
+  ).join('');
+}
+
+// ============================================
+// ユーティリティ
+// ============================================
+function clearResult(resetInput = true) {
+  document.getElementById('result-area').classList.remove('show');
+  document.getElementById('summary-box').textContent = '';
+  document.getElementById('insights-box').innerHTML = '';
+  document.getElementById('chart-wrap').style.display = 'none';
+  document.getElementById('result-table').innerHTML = '';
+  if (resetInput) document.getElementById('instruction').value = '';
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  resultHeaders = []; resultRows = [];
+}
+
+function resetFile() {
+  csvHeaders = []; csvData = []; fileName = '';
+  document.getElementById('file-input').value = '';
+  document.getElementById('upload-card').style.display = 'block';
+  document.getElementById('analyze-card').style.display = 'none';
+  clearResult();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// 初期化
+updateTrialBar();
+</script>
+</body>
+</html>
